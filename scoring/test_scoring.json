@@ -1,0 +1,11 @@
+{
+  "scoring.variant_list": "scoring/test_data/ENCSR999NKW/encode_variants.shortened.tsv",
+  "scoring.genome": "scoring/test_data/shared/GRCh38_no_alt_analysis_set_GCA_000001405.15.fasta",
+  "scoring.model": "scoring/test_data/ENCSR999NKW/chrombpnet_wo_bias.h5",
+  "scoring.output_prefix": "test_output/test_scoring/ENCSR999NKW/fold_0/",
+  "scoring.chrom_sizes": "scoring/test_data/shared/GRCh38_EBV.chrom.sizes.tsv",
+  "scoring.peaks": "scoring/test_data/ENCSR999NKW/peaks.shortened.bed.gz",
+  "scoring.n_shufs": "1000000",
+  "scoring.schema": "chrombpnet",
+  "scoring.no_hdf5": true
+}
