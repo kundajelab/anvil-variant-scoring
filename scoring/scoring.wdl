@@ -1,4 +1,4 @@
-version development
+version 1.0
 
 task run_scoring {
 	input {
