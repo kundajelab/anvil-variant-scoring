@@ -1,9 +1,7 @@
 version: 1.2
 workflows:
   - subclass: WDL
-    primaryDescriptorPath: scoring/scoring.wdl
-    testParameterFiles:
-      - testParameterPath: scoring/test.json
+    primaryDescriptorPath: /scoring/scoring.wdl
     authors:
       - name: Ivy
         email: mail@virtual.gf
