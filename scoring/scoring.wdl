@@ -58,6 +58,7 @@ task run_scoring {
 					-o ${new_output_prefix} \
 					-t ~{n_shufs} \
 					-sc ~{schema} \
+					--forward-only \
 					--no_hdf5 \
 					| while IFS= read -r line; do
 					printf '%s %s\n' "$(TZ='America/Los_Angeles' date '+%Y-%m-%d %H:%M:%S')" "$line"
