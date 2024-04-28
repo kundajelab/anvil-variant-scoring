@@ -17,6 +17,7 @@ task run_scoring {
 
 	command <<<
 		echo 'Running variant scoring...'
+		set -x
 
 		check_input_file() {
 			input_file="$1"
@@ -36,41 +37,40 @@ task run_scoring {
 			fi
 		}
 
-		check_input_file ~{variant_list}
-		check_input_file ~{genome}
-		check input_file ~{model}
-		check_input_file ~{chrom_sizes}
-		check_input_file ~{peaks}
+		check_input_file "~{variant_list}"
+		check_input_file "~{genome}"
+		check input_file "~{model}"
+		check_input_file "~{chrom_sizes}"
+		check_input_file "~{peaks}"
 
-		output_dir="/cromwell_root$(dirname ~{output_prefix})"
-		mkdir -p $output_dir
 		new_output_prefix="/cromwell_root~{output_prefix}"
+		mkdir -p $new_output_prefix
 		main() {
 			output_file=$(mktemp)
 			trap 'rm -f "$output_file"' EXIT
 			if [[ ~{no_hdf5} -eq true ]]; then
 				python -u /scratch/variant-scorer-ivyraine/src/variant_scoring.per_chrom.py \
-					-l ~{variant_list} \
-					-g ~{genome} \
-					-s ~{chrom_sizes} \
-					-m ~{model} \
-					-p ~{peaks} \
-					-o ${new_output_prefix} \
+					-l "~{variant_list}" \
+					-g "~{genome}" \
+					-s "~{chrom_sizes}" \
+					-m "~{model}" \
+					-p "~{peaks}" \
+					-o "${new_output_prefix}" \
 					-t ~{n_shufs} \
 					-sc ~{schema} \
-					--forward-only \
+					--forward_only \
 					--no_hdf5 \
 					| while IFS= read -r line; do
 					printf '%s %s\n' "$(TZ='America/Los_Angeles' date '+%Y-%m-%d %H:%M:%S')" "$line"
 					done | tee "$output_file"
 			else
 				python -u /scratch/variant-scorer-ivyraine/src/variant_scoring.per_chrom.py \
-					-l ~{variant_list} \
-					-g ~{genome} \
-					-s ~{chrom_sizes} \
-					-m ~{model} \
-					-p ~{peaks} \
-					-o ${new_output_prefix} \
+					-l "~{variant_list}" \
+					-g "~{genome}" \
+					-s "~{chrom_sizes}" \
+					-m "~{model}" \
+					-p "~{peaks}" \
+					-o "${new_output_prefix}" \
 					-t ~{n_shufs} \
 					-sc ~{schema} \
 					| while IFS= read -r line; do
@@ -96,6 +96,7 @@ task run_scoring {
 		# File output_score_file = "/cromwell_root/test_mkdir/test_touch"
 
 		echo "Completed!"
+		set +x
 		exit 0
 	>>>
 	output {
