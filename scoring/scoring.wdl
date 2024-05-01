@@ -5,7 +5,7 @@ task run_scoring {
 		File variant_list
 		File genome
 		File model
-		String output_prefix
+		String output_tar
 		File chrom_sizes
 		File peaks
 		Int n_shufs
@@ -43,9 +43,11 @@ task run_scoring {
 		check_input_file "~{chrom_sizes}"
 		check_input_file "~{peaks}"
 
-		new_output_prefix="/cromwell_root~{output_prefix}"
+		new_output_prefix="scratch$(dirname ~{output_tar})"
+		echo "new_output_prefix: $new_output_prefix"
 		mkdir -p $new_output_prefix
 		main() {
+			# -t ~{n_shufs} \
 			output_file=$(mktemp)
 			trap 'rm -f "$output_file"' EXIT
 			if [[ ~{no_hdf5} -eq true ]]; then
@@ -56,9 +58,9 @@ task run_scoring {
 					-m "~{model}" \
 					-p "~{peaks}" \
 					-o "${new_output_prefix}" \
-					-t ~{n_shufs} \
-					-sc ~{schema} \
+					-t 20 \
 					--forward_only \
+					-sc ~{schema} \
 					--no_hdf5 \
 					| while IFS= read -r line; do
 					printf '%s %s\n' "$(TZ='America/Los_Angeles' date '+%Y-%m-%d %H:%M:%S')" "$line"
@@ -71,7 +73,8 @@ task run_scoring {
 					-m "~{model}" \
 					-p "~{peaks}" \
 					-o "${new_output_prefix}" \
-					-t ~{n_shufs} \
+					-t 20 \
+					--forward_only \
 					-sc ~{schema} \
 					| while IFS= read -r line; do
 					printf '%s %s\n' "$(TZ='America/Los_Angeles' date '+%Y-%m-%d %H:%M:%S')" "$line"
@@ -86,21 +89,20 @@ task run_scoring {
 			# If the exit code is not 0, then the job failed.
 			if [ "$(echo "$output" | grep -i "error" | wc -l)" -gt 1 ] || [ "$exit_code" -ne 0 ]; then
 				echo "ERROR: variant_scoring.per_chrom.py failed with exit code $exit_code"
-				rm "${new_output_prefix}.variant_scores.tsv"
 				exit $exit_code
 			fi
 		}
 		main
-		# mkdir "/cromwell_root/test_mkdir"
-		# touch "/cromwell_root/test_mkdir/test_touch"
-		# File output_score_file = "/cromwell_root/test_mkdir/test_touch"
+
+		echo "Scoring complete. Now tarring result folder."
+		tar -czvf "$(basename ~{output_tar})" -C "scratch$(dirname ~{output_tar})" .; mv "$(basename ~{output_tar})" "scratch~{output_tar}"
 
 		echo "Completed!"
 		set +x
 		exit 0
 	>>>
 	output {
-		File output_score_file = "/cromwell_root" + output_prefix + ".variant_scores.tsv"
+		File output_score_file = "scratch~{output_tar}"
 	}
 	runtime {
 		bootDiskSizeGb: 50
@@ -120,7 +122,7 @@ workflow scoring {
 		File variant_list
 		File genome
 		File model
-		String output_prefix
+		String output_tar
 		File chrom_sizes
 		File peaks
 		Int n_shufs
@@ -134,7 +136,7 @@ workflow scoring {
 			variant_list = variant_list,
 			genome = genome,
 			model = model,
-			output_prefix = output_prefix,
+			output_tar = output_tar,
 			chrom_sizes = chrom_sizes,
 			peaks = peaks,
 			n_shufs = n_shufs,
