@@ -43,7 +43,7 @@ task run_scoring {
 		check_input_file "~{chrom_sizes}"
 		check_input_file "~{peaks}"
 
-		new_output_prefix="scratch$(dirname ~{output_tar})"
+		new_output_prefix="$(dirname ~{output_tar})"
 		echo "new_output_prefix: $new_output_prefix"
 		mkdir -p $new_output_prefix
 		main() {
@@ -95,14 +95,14 @@ task run_scoring {
 		main
 
 		echo "Scoring complete. Now tarring result folder."
-		tar -czvf "$(basename ~{output_tar})" -C "scratch$(dirname ~{output_tar})" .; mv "$(basename ~{output_tar})" "scratch~{output_tar}"
+		tar -czvf "$(basename ~{output_tar})" -C "$(dirname ~{output_tar})" .; mv "$(basename ~{output_tar})" "~{output_tar}"
 
 		echo "Completed!"
 		set +x
 		exit 0
 	>>>
 	output {
-		File output_score_file = "scratch~{output_tar}"
+		File output_score_file = "~{output_tar}"
 	}
 	runtime {
 		bootDiskSizeGb: 50
