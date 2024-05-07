@@ -47,7 +47,6 @@ task run_scoring {
 		echo "new_output_prefix: $new_output_prefix"
 		mkdir -p $new_output_prefix
 		main() {
-			# -t ~{n_shufs} \
 			output_file=$(mktemp)
 			trap 'rm -f "$output_file"' EXIT
 			if [[ ~{no_hdf5} -eq true ]]; then
@@ -58,7 +57,7 @@ task run_scoring {
 					-m "~{model}" \
 					-p "~{peaks}" \
 					-o "${new_output_prefix}" \
-					-t 20 \
+					-t ~{n_shufs} \
 					--forward_only \
 					-sc ~{schema} \
 					--no_hdf5 \
@@ -73,7 +72,7 @@ task run_scoring {
 					-m "~{model}" \
 					-p "~{peaks}" \
 					-o "${new_output_prefix}" \
-					-t 20 \
+					-t ~{n_shufs} \
 					--forward_only \
 					-sc ~{schema} \
 					| while IFS= read -r line; do
