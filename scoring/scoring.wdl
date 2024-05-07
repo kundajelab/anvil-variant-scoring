@@ -15,20 +15,38 @@ task run_scoring {
 		Int memory_gb
 	}
 
+	String output_score_file_temp = "output_score_file.temp"
+	String missing_files_temp = "missing_files.temp"
+	String is_complete_temp = "is_complete.temp"
+
 	command <<<
 		echo 'Running variant scoring...'
 		set -x
+		# Exits with zero if:
+		# - All input files exist and are non-empty.
+		# - Everything works as expected.
+		# Exits with non-zero if:
+		# - The script has a logical error.
+		# - The existing files don't work with the script.
 
+		# Create intermediate files.
+		# touch "~{output_score_file_temp}"
+		echo "~{output_tar}" > "~{output_score_file_temp}"
+		touch "~{output_tar}" 
+		touch "~{missing_files_temp}"
+		echo "false" > "~{is_complete_temp}"
+
+		is_missing_files=false
 		check_input_file() {
 			input_file="$1"
 			if [ ! -f "${input_file}" ]; then
 				echo "ERROR: Input file ${input_file} does not exist. You need to transfer it."
-				echo "MISSING:${input_file}"
-				exit 1
+				echo "${input_file}\n" >> "~{missing_files_temp}"
+				is_missing_files=true
 			elif [ ! -s "${input_file}" ]; then
 				echo "ERROR: Input file ${input_file} is empty. You need to transfer it."
-				echo "MISSING:${input_file}"
-				exit 1
+				echo "${input_file}\n" >> "~{missing_files_temp}"
+				is_missing_files=true
 			else
 				if [[ ${input_file} != *.gz ]]; then
 					echo "------ The total size is:"
@@ -36,6 +54,11 @@ task run_scoring {
 				fi
 			fi
 		}
+		# Exit if missing files.
+		if [ "$is_missing_files" = true ]; then
+			echo "ERROR: Missing input files:\n$(cat ~{missing_files_temp})\nExiting."
+			exit 0
+		fi
 
 		check_input_file "~{variant_list}"
 		check_input_file "~{genome}"
@@ -44,7 +67,6 @@ task run_scoring {
 		check_input_file "~{peaks}"
 
 		new_output_prefix="$(dirname ~{output_tar})"
-		echo "new_output_prefix: $new_output_prefix"
 		mkdir -p $new_output_prefix
 		main() {
 			output_file=$(mktemp)
@@ -95,13 +117,17 @@ task run_scoring {
 
 		echo "Scoring complete. Now tarring result folder."
 		tar -czvf "$(basename ~{output_tar})" -C "$(dirname ~{output_tar})" .; mv "$(basename ~{output_tar})" "~{output_tar}"
+		echo "~{output_tar}" > "~{output_score_file_temp}"
+		echo "true" > "~{is_complete_temp}"
 
 		echo "Completed!"
 		set +x
 		exit 0
 	>>>
 	output {
-		File output_score_file = "~{output_tar}"
+		File output_score_file = read_string("~{output_score_file_temp}")
+		String missing_files = read_string("~{missing_files_temp}")
+		Boolean is_complete = read_boolean("~{is_complete_temp}")
 	}
 	runtime {
 		bootDiskSizeGb: 50
@@ -146,5 +172,7 @@ workflow scoring {
 	}
 	output {
 		File output_score_file = run_scoring.output_score_file
+		String missing_files = run_scoring.missing_files
+		Boolean is_complete = run_scoring.is_complete
 	}
 }
